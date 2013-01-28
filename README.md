@@ -8,7 +8,34 @@ cowboy_patch
 
 Middleware for easing exposing RESTful services, helps dealing with unfriendly intermediary network environment which sometimes disallow certain critical HTTP methods and/or headers.
 This one allows to tunnel information via URI.
-Please, consult [comments in the code](src/cowboy_patch.erl#L9-18) so far: 
+Please, consult [comments in the code](src/cowboy_patch.erl#L9-18) so far. 
+
+cowboy_rpc
+--------------
+
+Handler for simple JSON RPC queries helping exposing level-0 REST services.
+
+Router configuration:
+```erlang
+%% in env key of protocol configuration:
+{"/rpc/[...]", cowboy_rpc, [{handler, {rpc, process}}]}
+```
+
+In rpc.erl:
+```erlang
+-export([process/3]).
+process(<<"add">>, X, Y) ->
+  {ok, X + Y}.
+```
+
+Call:
+```sh
+curl -d '[["add", [123, 321], 999]]' localhost:8080/
+[[null, 444, 999]]
+
+curl -d '[["nonexisting", [123, 321], 999]]' localhost:8080/
+[["enoent", null, 999]]
+```
 
 [License](LICENSE.txt)
 -------
