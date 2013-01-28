@@ -1,7 +1,7 @@
 Stable
 ==============
 
-Library of assorted helpers for [Cowboy](https://github.com/extend/cowboy) web server.
+Collection of assorted helpers for [Cowboy](https://github.com/extend/cowboy) web server.
 
 cowboy_patch
 --------------
@@ -49,6 +49,32 @@ Platform = cowboy_ua:platform(UserAgentHeader).
 ```
 
 Should you put `cowboy_ua` in middleware chain, handler options will be augmented with `{useragent, {Agent, Platform}}` tuple.
+
+cowboy_common_handler
+--------------
+
+Handler for common request cases.
+
+Router configuration:
+```erlang
+%% in env key of protocol configuration:
+{"/common/[...]", cowboy_common_handler, [{handler, common_handler}]}
+```
+
+In common_handler.erl:
+```erlang
+-export([handler/4]).
+
+handler(<<"GET">>, [], _Req, Session) ->
+  {render, index_view, Session, _Req};
+
+handler(<<"GET">>, [<<"bar">>], _Req, Session) ->
+  {200, [], <<"Hello Bar!\n">>, _Req};
+
+handler(_, _, Req, _Session) ->
+  {ok, Req2} = cowboy_req:reply(200, [], <<"Hello World\n">>, Req),
+  {ok, Req2}.
+```
 
 [License](LICENSE.txt)
 -------
