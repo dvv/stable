@@ -75,5 +75,4 @@ method(Headers, [Override | Tail]) ->
 %%
 
 execute(Req, Env) ->
-  pecypc_log:info({exec, Req}),
   {ok, patch_method(patch_headers(Req)), Env}.

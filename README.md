@@ -10,6 +10,8 @@ Middleware for easing exposing RESTful services, helps dealing with unfriendly i
 This one allows to tunnel information via URI.
 Please, consult [comments in the code](src/cowboy_patch.erl#L9-18) so far. 
 
+Should you put `cowboy_patch` in middleware chain, request will be updated automatically.
+
 cowboy_rpc
 --------------
 
@@ -36,6 +38,17 @@ curl -d '[["add", [123, 321], 999]]' localhost:8080/
 curl -d '[["nonexisting", [123, 321], 999]]' localhost:8080/
 [["enoent", null, 999]]
 ```
+
+cowboy_ua
+--------------
+
+```erlang
+{UserAgentHeader, Req2} = cowboy_req:headers(<<"user-agent">>, Req),
+Agent = cowboy_ua:agent(UserAgentHeader),
+Platform = cowboy_ua:platform(UserAgentHeader).
+```
+
+Should you put `cowboy_ua` in middleware chain, handler options will be augmented with `{useragent, {Agent, Platform}}` tuple.
 
 [License](LICENSE.txt)
 -------
