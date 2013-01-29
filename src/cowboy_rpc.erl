@@ -131,7 +131,9 @@ reply(R, Id) ->
   case R of
     {ok, Result} ->
       [null, Result, Id];
-    {error, Reason} ->
-      % @todo Reason to binary conversion
+    {error, Reason} when is_atom(Reason)->
+      [atom_to_binary(Reason, latin1), null, Id];
+    {error, Reason} when is_binary(Reason) or
+            is_number(Reason) or is_boolean(Reason) ->
       [Reason, null, Id]
   end.

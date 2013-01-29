@@ -23,20 +23,27 @@ Router configuration:
 {"/rpc/[...]", cowboy_rpc, [{handler, {rpc, process}}]}
 ```
 
+Handler can be:
+- an atom `Mod`: `Mod:handle(...)` is called;
+- a 2-tuple of atoms: `{Mod, Fun}`: `Mod:Fun(...)` is called;
+- a `Pid :: pid()`: `gen_server:call(Pid, ...)` is called.
+
 In rpc.erl:
 ```erlang
 -export([process/3]).
-process(<<"add">>, X, Y) ->
+process(<<"add">>, X, Y) when is_number(X) and is_number(Y) ->
   {ok, X + Y}.
+process(<<"add">>, _X, _Y) ->
+  {error, badarg}.
 ```
 
 Call:
 ```sh
-curl -d '[["add", [123, 321], 999]]' localhost:8080/
-[[null, 444, 999]]
+curl -d '[["add", [123, 321], "id999"], ["add", [true, 321], "id998"]]' localhost:8080/
+[[null, 444, "id999"], ["badarg", null, "id998"]]
 
-curl -d '[["nonexisting", [123, 321], 999]]' localhost:8080/
-[["enoent", null, 999]]
+curl -d '[["nonexisting", [123, 321], "id997"]]' localhost:8080/
+[["enoent", null, "id997"]]
 ```
 
 cowboy_ua
