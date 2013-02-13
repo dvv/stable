@@ -8,7 +8,7 @@ cowboy_patch
 
 Middleware for easing exposing RESTful services, helps dealing with unfriendly intermediary network environment which sometimes disallow certain critical HTTP methods and/or headers.
 This one allows to tunnel information via URI.
-Please, consult [comments in the code](src/cowboy_patch.erl#L9-18) so far. 
+Please, consult [comments in the code](src/cowboy_patch.erl#L9-18) so far.
 
 Should you put `cowboy_patch` in middleware chain, request will be updated automatically.
 
@@ -83,7 +83,7 @@ handler(_, _, Req, _Session) ->
   {ok, Req2}.
 ```
 
-[License](LICENSE.txt)
+License (MIT)
 -------
 
 Copyright (c) 2013 Vladimir Dronnikov <dronnikov@gmail.com>
