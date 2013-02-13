@@ -6,8 +6,7 @@ Collection of assorted helpers for [Cowboy](https://github.com/extend/cowboy) we
 cowboy_patch
 --------------
 
-Middleware for easing exposing RESTful services, helps dealing with unfriendly intermediary network environment which sometimes disallow certain critical HTTP methods and/or headers.
-This one allows to tunnel information via URI.
+Middleware for easing exposing RESTful services, helps dealing with unfriendly intermediary network environment which sometimes disallows certain critical HTTP methods and/or headers. This middleware allows for reading this info if it's tunnelled via URI in form of predefined querystring tokens `_x-NAME=VALUE`.
 Please, consult [comments in the code](src/cowboy_patch.erl#L9-18) so far.
 
 Should you put `cowboy_patch` in middleware chain, request will be updated automatically.
