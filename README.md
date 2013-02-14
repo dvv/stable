@@ -35,9 +35,9 @@ Router configuration:
 ```
 
 Handler can be:
-- an atom `Mod`: `Mod:handle(...)` is called;
-- a 2-tuple of atoms: `{Mod, Fun}`: `Mod:Fun(...)` is called;
-- a `Pid :: pid()`: `gen_server:call(Pid, ...)` is called.
+- an atom `Mod` calls `Mod:handle(...)`;
+- a 2-tuple of atoms: `{Mod, Fun}` calls `Mod:Fun(...)`;
+- a `Pid :: pid()` calls `gen_server:call(Pid, ...)`.
 
 In rpc.erl:
 ```erlang
