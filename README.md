@@ -6,10 +6,22 @@ Collection of assorted helpers for [Cowboy](https://github.com/extend/cowboy) we
 cowboy_patch
 --------------
 
-Middleware for easing exposing RESTful services, helps dealing with unfriendly intermediary network environment which sometimes disallows certain critical HTTP methods and/or headers. This middleware allows for reading this info if it's tunnelled via URI in form of predefined querystring tokens `_x-NAME=VALUE`.
-Please, consult [comments in the code](src/cowboy_patch.erl#L9-18) so far.
+Middleware for easing exposing RESTful services, helps dealing with unfriendly intermediary network environment which sometimes disallow certain critical HTTP methods and/or headers.
+This one allows to tunnel information via URI.
+Please, consult [comments in the code](https://github.com/dvv/stable/blob/master/src/cowboy_patch.erl#L9-L18) so far. 
 
 Should you put `cowboy_patch` in middleware chain, request will be updated automatically.
+
+cowboy_mrouter
+--------------
+
+Middleware allowing to match HTTP method in standard router.
+
+Inserting `cowboy_mrouter` into middleware chain before `cowboy_router` mangles incoming requests prepending URIs with HTTP method.
+Router rules then can match methods directly, e.g.:
+```erlang
+{"/GET/foo/bar/[...]", Handler, Params}
+```
 
 cowboy_rpc
 --------------
