@@ -1,0 +1,11 @@
+{application, stable, [
+  {description, "Collection of assorted helpers for Cowboy web server"},
+  {vsn, "0.0.1"},
+  {registered, []},
+  {applications, [
+    kernel,
+    stdlib,
+    cowboy
+  ]},
+  {env, []}
+]}.
