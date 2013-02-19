@@ -8,7 +8,7 @@ cowboy_patch
 
 Middleware for easing exposing RESTful services, helps dealing with unfriendly intermediary network environment which sometimes disallow certain critical HTTP methods and/or headers.
 This one allows to tunnel information via URI.
-Please, consult [comments in the code](https://github.com/dvv/stable/blob/master/src/cowboy_patch.erl#L9-L18) so far. 
+Please, consult [comments in the code](https://github.com/dvv/stable/blob/master/src/cowboy_patch.erl#L9-L18) so far.
 
 Should you put `cowboy_patch` in middleware chain, request will be updated automatically.
 
@@ -67,6 +67,14 @@ Platform = cowboy_ua:platform(UserAgentHeader).
 ```
 
 Should you put `cowboy_ua` in middleware chain, handler options will be augmented with `{useragent, {Agent, Platform}}` tuple.
+
+cowboy_msie_fix_accept
+--------------
+
+By default MSIE [sends](https://github.com/extend/cowboy/issues/441) `Accept: application/x-ms-application, image/jpeg, application/xaml+xml, image/gif, image/pjpeg, application/x-ms-xbap, application/vnd.ms-excel, application/vnd.ms-powerpoint, application/msword, */*` header which is inappropriate to make hypermedia choice of the least surprise -- it anticipates `text/html` mime as the last fallback.
+This makes creating REST services somewhat difficult.
+
+Should you put `cowboy_msie` in middleware chain after `cowboy_router` and `cowboy_ua`, `Accept: ` will be substituted with `text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8` which seems what other browsers send by default.
 
 cowboy_common_handler
 --------------

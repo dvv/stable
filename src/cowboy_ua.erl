@@ -1,6 +1,8 @@
 %%
 %% @doc Simple user-agent determination
 %%
+%%      NB: Apply after cowboy_router middleware
+%%
 
 -module(cowboy_ua).
 -author('Vladimir Dronnikov <dronnikov@gmail.com>').
