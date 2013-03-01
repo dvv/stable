@@ -71,8 +71,62 @@ method(Headers, [Override | Tail]) ->
   end.
 
 %%
+%% @doc Patch request in accordance to apigen recommendations.
+%%
+%% http://coolthingoftheday.blogspot.com.es/2012/03/another-free-from-team-at-apigee-api.html
+%%
+-spec patch_pragmatic(cowboy_req:req()) -> cowboy_req:req().
+
+patch_pragmatic(Req) ->
+  [Headers, Path, Method] = cowboy_req:get([headers, path, method], Req),
+  % honor URI suffix (overrides Accept: if any)
+  % @todo: mimetypes is gen_server-based -- may be bottleneck
+  Req2 = case mimetypes:filename(Path) of
+    [<<"application/octet-stream">>] ->
+      Req;
+    NewAccepts -> % join using comma
+      cowboy_req:set([
+          {headers, [{<<"accept">>, join_bins(NewAccepts, <<$,>>)} |
+              lists:keydelete(<<"accept">>, 1, Headers)]},
+          {path, filename:rootname(Path)}
+        ], Req)
+  end,
+  % extract standard API parameters
+  {Qs, Req3} = cowboy_req:qs_vals(Req2),
+  % @todo rewrite in favor of lists:foldl
+  {Meta, Qs2} = lists:partition(fun get_params/1, Qs),
+  Req4 = cowboy_req:set([{qs_vals, Qs2}], Req3),
+  % override method for POST requests
+  {Req5, Meta2} = case lists:keytake(<<"method">>, 1, Meta) of
+    {value, {<<"method">>, NewMethod}, Meta1} when Method =:= <<"POST">> ->
+      {cowboy_req:set([
+          {method, cowboy_bstr:to_upper(NewMethod)}
+        ], Req4), Meta1};
+    _ ->
+      {Req4, Meta}
+  end,
+  % @todo Range: items=... header should parse to limit/offset
+  % store standard API parameters in request meta
+  % @todo make the keys atoms
+  cowboy_req:set_meta(meta, Meta2, Req5).
+
+get_params({<<"fields">>, _}) -> true;
+get_params({<<"limit">>, _}) -> true;
+get_params({<<"offset">>, _}) -> true;
+get_params({<<"method">>, _}) -> true;
+get_params({<<"suppress_response_codes">>, _}) -> true;
+get_params({_, _}) -> false.
+
+join_bins(List, Sep) -> join_bins(List, Sep, <<>>).
+join_bins([], _Sep, Bin) -> Bin;
+join_bins([H | T], Sep, <<>>) ->
+  join_bins(T, Sep, << H/binary >>);
+join_bins([H | T], Sep, Bin) ->
+  join_bins(T, Sep, << Bin/binary, Sep/binary, H/binary >>).
+
+%%
 %% @doc Middleware applying patch_headers/1 and patch_method/1.
 %%
 
 execute(Req, Env) ->
-  {ok, patch_method(patch_headers(Req)), Env}.
+  {ok, patch_pragmatic(patch_method(patch_headers(Req))), Env}.

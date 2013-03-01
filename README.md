@@ -76,6 +76,94 @@ This makes creating REST services somewhat difficult.
 
 Should you put `cowboy_msie` in middleware chain after `cowboy_router` and `cowboy_ua`, `Accept: ` will be substituted with `text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8` which seems what other browsers send by default.
 
+cowboy_cookie_session
+--------------
+
+Manage a moderately sized sessions inside secure signed encrypted cookies.
+
+```erlang
+handle(Req, State) ->
+
+  % session params
+  SessionOpts = {
+      <<"s">>,    % cookie name
+      <<"FOO">>,  % cipher secret
+      1000,       % session time-to-live in seconds, older sessions are expired
+      <<"/">>     % cookie path
+    },
+
+  % get previous session
+  {Session, Req2} = cowboy_cookie_session:get_session(SessionOpts, Req),
+
+  % do the job
+  % ...
+  {Status, Headers, Body, Req3} = {200, [], <<"OK">>, Req2},
+
+  % set new session
+  Req4 = case KeepSession of
+      true ->
+        Session2 = {foo, bar},
+        cowboy_cookie_session:set_session(Session2, SessionOpts, Req3);
+      false ->
+        cowboy_cookie_session:set_session(undefined, SessionOpts, Req3)
+    end,
+
+  % respond
+  {ok, Req5} = cowboy_req:reply(Status, Headers, Body, Req4),
+  {ok, Req5, State}.
+```
+
+cowboy_cookie_session as middleware
+--------------
+
+Protocol options passed to `cowboy:start_http/4` should contain:
+```erlang
+
+  ...
+
+  % middleware
+  {middlewares, [
+      cowboy_router,
+      cowboy_cookie_session, % requires session_opts in env. see below
+      cowboy_handler]},
+
+  % environment
+  {env, [
+    % session parameters
+    {session_opts, {
+        <<"sid">>,       % cookie name
+        <<"tOpcekpet">>, % encryption secret
+        1000,            % cookie time-to-live in seconds
+        <<"/">>}},       % cookie path
+    ...
+```
+
+Then in the handler:
+
+```erlang
+init(_Transport, Req, Opts) ->
+
+  % get previous session
+  {session, Session, SessionOpts} = lists:keyfind(session, 1, Opts),
+  {ok, Req, {Session, SessionOpts}}.
+
+handle(Req, {Session, SessionOpts} = State) ->
+
+  % do the job
+  % ...
+  {Status, Headers, Body, Req2} = {200, [], <<"OK">>, Req},
+
+  % mangle the session
+  Session2 = [{foo, bar} | Session],
+
+  % set new session
+  Req3 = cowboy_cookie_session:set_session(Session2, SessionOpts, Req2),
+
+  % respond
+  {ok, Req4} = cowboy_req:reply(Status, Headers, Body, Req3),
+  {ok, Req4, State}.
+```
+
 cowboy_common_handler
 --------------
 
@@ -91,15 +179,34 @@ In common_handler.erl:
 ```erlang
 -export([handler/4]).
 
+% render
 handler(<<"GET">>, [], _Req, Session) ->
   {render, index_view, Session, _Req};
 
+% status, headers, body
 handler(<<"GET">>, [<<"bar">>], _Req, Session) ->
   {200, [], <<"Hello Bar!\n">>, _Req};
 
+% handler takes full care of response
 handler(_, _, Req, _Session) ->
   {ok, Req2} = cowboy_req:reply(200, [], <<"Hello World\n">>, Req),
-  {ok, Req2}.
+  {ok, Req2};
+
+% login/logout: redirect, new session
+handler(<<"POST">>, [<<"login">>], Req, Session) ->
+  Session2 = case Session of
+    undefined ->
+      [{user, <<"DVV">>}];
+    _ ->
+      [{user, <<"DVV">>} | lists:keydelete(user, 1, Session)]
+  end,
+  % @todo needa know full path
+  {redirect, <<"/common">>, Req, Session2};
+
+handler(<<"POST">>, [<<"logout">>], Req, _Session) ->
+  Session2 = undefined,
+  % @todo needa know full path
+  {redirect, <<"/common">>, Req, Session2}.
 ```
 
 License (MIT)
