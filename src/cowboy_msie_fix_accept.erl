@@ -20,7 +20,7 @@ execute(Req, Env) ->
       Req3 = cowboy_req:set([{headers, [
           {<<"accept">>,
           <<"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8">>}
-            | Headers]}], Req2),
+            | lists:keydelete(<<"accept">>, 1, Headers)]}], Req2),
       {ok, Req3, Env};
     _Else ->
       {ok, Req, Env}
