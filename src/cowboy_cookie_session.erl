@@ -7,15 +7,15 @@
 execute(Req, Env) ->
 
   % session_opts tuple is required in Env
-  {session_opts, CookieOpts} = lists:keyfind(session_opts, 1, Env),
+  {_, SessionOpts} = lists:keyfind(session_opts, 1, Env),
 
   % get session from request
-  {Session, Req2} = get_session(CookieOpts, Req),
+  {Session, Req2} = get_session(SessionOpts, Req),
 
   % extract handler options
-  {handler_opts, HandlerOpts} = lists:keyfind(handler_opts, 1, Env),
+  {_, HandlerOpts} = lists:keyfind(handler_opts, 1, Env),
   % put session and session setter to handler options
-  HandlerOpts2 = [{session, Session, CookieOpts} | HandlerOpts],
+  HandlerOpts2 = [{session, Session, SessionOpts} | HandlerOpts],
   % update handler_opts
   Env2 = [{handler_opts, HandlerOpts2} | lists:keydelete(handler_opts, 1, Env)],
 

@@ -16,26 +16,29 @@
 -export([init/3, terminate/3, handle/2]).
 
 init(_Transport, Req, Opts) ->
-  {ok, Req, Opts}.
+  % apply apigen pragmatic REST recommendations
+  {ok, cowboy_patch:patch_pragmatic_rest(
+       cowboy_patch:patch_method(
+       cowboy_patch:patch_headers(Req))),  Opts}.
 
 terminate(_Reason, _Req, _State) ->
   ok.
 
 handle(Req, Opts) ->
-  % get handler module
-  {handler, Handler} = lists:keyfind(handler, 1, Opts),
   % get request method and path
   [Method, Path] = cowboy_req:get([method, path_info], Req),
 
   % get session
-  {Session, SessionOpts, Req2} = case lists:keyfind(session, 1, Opts) of
-    {session, Session1, SessionOpts1} ->
-      {Session1, SessionOpts1, Req};
+  {Session, Req2} = case lists:keyfind(session_opts, 1, Opts) of
+    {_, SessionOpts} ->
+      cowboy_cookie_session:get_session(SessionOpts, Req);
     false ->
-      {undefined, undefined, Req}
+      SessionOpts = undefined,
+      {[], Req}
   end,
 
   % call handler
+  {_, Handler} = lists:keyfind(handler, 1, Opts),
   case Handler:handler(Method, Path, Req2, Session) of
     % handler already responded
     {ok, Req3} ->
@@ -52,11 +55,11 @@ handle(Req, Opts) ->
       respond(Status, [], <<>>, Req3);
     % redirect
     {redirect, Location, Req3, Session2} ->
-      respond(303, [
+      respond(302, [
           {<<"location">>, Location}
         ], <<>>, Req3, Session, Session2, SessionOpts);
     {redirect, Location, Req3} ->
-      respond(303, [
+      respond(302, [
           {<<"location">>, Location}
         ], <<>>, Req3);
     % template module and variables for interpolation
