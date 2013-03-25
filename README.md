@@ -76,93 +76,54 @@ This makes creating REST services somewhat difficult.
 
 Should you put `cowboy_msie` in middleware chain after `cowboy_router` and `cowboy_ua`, `Accept: ` will be substituted with `text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8` which seems what other browsers send by default.
 
-cowboy_cookie_session
+cowboy_session
 --------------
 
-Manage a moderately sized sessions inside secure signed encrypted cookies.
+Manage your sessions.
+
+Insert `cowboy_session` middleware somewhere between `cowboy_router` and `cowboy_handler`:
 
 ```erlang
-handle(Req, State) ->
-
-  % session params
-  SessionOpts = {
-      <<"s">>,    % cookie name
-      <<"FOO">>,  % cipher secret
-      1000,       % session time-to-live in seconds, older sessions are expired
-      <<"/">>     % cookie path
-    },
-
-  % get previous session
-  {Session, Req2} = cowboy_cookie_session:get_session(SessionOpts, Req),
-
-  % do the job
-  % ...
-  {Status, Headers, Body, Req3} = {200, [], <<"OK">>, Req2},
-
-  % set new session
-  Req4 = case KeepSession of
-      true ->
-        Session2 = {foo, bar},
-        cowboy_cookie_session:set_session(Session2, SessionOpts, Req3);
-      false ->
-        cowboy_cookie_session:set_session(undefined, SessionOpts, Req3)
-    end,
-
-  % respond
-  {ok, Req5} = cowboy_req:reply(Status, Headers, Body, Req4),
-  {ok, Req5, State}.
-```
-
-cowboy_cookie_session as middleware
---------------
-
-Protocol options passed to `cowboy:start_http/4` should contain:
-```erlang
-
-  ...
-
-  % middleware
   {middlewares, [
-      cowboy_router,
-      cowboy_cookie_session, % requires session_opts in env. see below
-      cowboy_handler]},
-
-  % environment
-  {env, [
-    % session parameters
-    {session_opts, {
-        <<"sid">>,       % cookie name
-        <<"tOpcekpet">>, % encryption secret
-        1000,            % cookie time-to-live in seconds
-        <<"/">>}},       % cookie path
     ...
+    cowboy_router,                % determine handler and its options
+    ...
+    cowboy_session,               % requires session_opts in environment
+    ...
+    cowboy_handler,               % process request
+    ...
+  ]}
 ```
 
-Then in the handler:
+Add session options to request environment:
 
 ```erlang
-init(_Transport, Req, Opts) ->
-
-  % get previous session
-  {session, Session, SessionOpts} = lists:keyfind(session, 1, Opts),
-  {ok, Req, {Session, SessionOpts}}.
-
-handle(Req, {Session, SessionOpts} = State) ->
-
-  % do the job
-  % ...
-  {Status, Headers, Body, Req2} = {200, [], <<"OK">>, Req},
-
-  % mangle the session
-  Session2 = [{foo, bar} | Session],
-
-  % set new session
-  Req3 = cowboy_cookie_session:set_session(Session2, SessionOpts, Req2),
-
-  % respond
-  {ok, Req4} = cowboy_req:reply(Status, Headers, Body, Req3),
-  {ok, Req4, State}.
+{env, [
+    ...
+    {session_opts, {SessionImplementationModuleName, ImplementationOptions}},
+    ...
+  ]}
 ```
+
+E.g. for bundled `cowboy_cookie_session` implementation:
+
+```erlang
+{session_opts, {cowboy_cookie_session, {
+    <<"sid">>,       % cookie name
+    <<"tOpcekpet">>, % encryption secret
+    1000,            % cookie time-to-live in seconds
+    <<"/">>}}}       % cookie path
+```
+
+Access, modify or drop session:
+
+```erlang
+{Session, Req2} = cowboy_session:get(Req),
+Req3 = cowboy_session:set(NewSession, Req2),
+Req4 = cowboy_session:drop(Req3).
+```
+
+Consider writing other implementations :)
 
 cowboy_common_handler
 --------------
