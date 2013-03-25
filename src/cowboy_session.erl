@@ -86,15 +86,7 @@ set(Session, Req, Override) ->
       Req2;
     {{_, Mod, Opts}, Req2} ->
       Req3 = Mod:set(Session, Opts, Req2),
-      cowboy_req:set_meta(session, {Session, Mod, Opts}, Req3);
-    % silently fail if session options unknown
-    % @todo get rid of defensive programming!
-    {undefined, Req2} ->
-      error_logger:error_report(
-          "\nSession can not be set due to lack of options."
-          "\nCheck that you have enabled cowboy_session middleware "
-          "and specified correct session_opts in request environment.\n"),
-      Req2
+      cowboy_req:set_meta(session, {Session, Mod, Opts}, Req3)
   end.
 
 %% -----------------------------------------------------------------------------
