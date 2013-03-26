@@ -138,36 +138,37 @@ Router configuration:
 
 In common_handler.erl:
 ```erlang
--export([handler/4]).
+-export([action/3]).
 
-% render
-handler(<<"GET">>, [], _Req, Session) ->
-  {render, index_view, Session, _Req};
+% render index_view template with Session passed as data there
+action(<<"GET">>, [], Req) ->
+  {Session, Req2} = cowboy_session:get(Req),
+  {render, index_view, Session, Req2};
 
 % status, headers, body
-handler(<<"GET">>, [<<"bar">>], _Req, Session) ->
+action(<<"GET">>, [<<"bar">>], _Req) ->
   {200, [], <<"Hello Bar!\n">>, _Req};
 
-% handler takes full care of response
-handler(_, _, Req, _Session) ->
+% action takes full care of response
+action(_, _, Req) ->
   {ok, Req2} = cowboy_req:reply(200, [], <<"Hello World\n">>, Req),
   {ok, Req2};
 
 % login/logout: redirect, new session
-handler(<<"POST">>, [<<"login">>], Req, Session) ->
+action(<<"POST">>, [<<"login">>], Req) ->
+  {Session, Req2} = cowboy_session:get(Req),
   Session2 = case Session of
     undefined ->
       [{user, <<"DVV">>}];
     _ ->
       [{user, <<"DVV">>} | lists:keydelete(user, 1, Session)]
   end,
-  % @todo needa know full path
-  {redirect, <<"/common">>, Req, Session2};
+  Req3 = cowboy_session:set(Session2, Req2),
+  {redirect, <<"/home">>, Req3};
 
-handler(<<"POST">>, [<<"logout">>], Req, _Session) ->
-  Session2 = undefined,
-  % @todo needa know full path
-  {redirect, <<"/common">>, Req, Session2}.
+action(<<"POST">>, [<<"logout">>], Req) ->
+  Req2 = cowboy_session:drop(Req),
+  {redirect, <<"/login">>, Req2}.
 ```
 
 License (MIT)

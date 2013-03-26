@@ -109,10 +109,17 @@ patch_pragmatic_rest(Req) ->
     _ ->
       {Req4, Meta}
   end,
+  % suppress_response_codes forces Status to 200
+  Req6 = case lists:keyfind(<<"suppress_response_codes">>, 1, Meta2) of
+    {_, _} ->
+      cowboy_req:set([{onresponse, fun suppress_response_codes/4}], Req5);
+    _ ->
+      Req5
+  end,
   % @todo Range: items=... header should parse to limit/offset
   % store standard API parameters in request meta
   % @todo make the keys atoms
-  cowboy_req:set_meta(meta, Meta2, Req5).
+  cowboy_req:set_meta(rest_params, Meta2, Req6).
 
 is_meta_param({<<"fields">>, _}) -> true;
 is_meta_param({<<"limit">>, _}) -> true;
@@ -127,6 +134,10 @@ binary_join([H|T], Sep) ->
   << H/binary, Sep/binary, (binary_join(T, Sep))/binary >>;
 binary_join([], _Sep) ->
   <<>>.
+
+suppress_response_codes(_, Headers, Body, Req) ->
+  {ok, Req2} = cowboy_req:reply(200, Headers, Body, Req),
+  Req2.
 
 %%
 %% @doc Middleware applying patch_headers/1 and patch_method/1.
