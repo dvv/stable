@@ -45,6 +45,13 @@ handle(Req, State) ->
     {Status, Req3} when is_integer(Status) ->
       {ok, Req4} = cowboy_req:reply(Status, Req3),
       {ok, Req4, undefined};
+    % redirect back to referrer
+    {redirect, Req3} ->
+      {Location, Req4} = cowboy_req:header(<<"referer">>, Req3, <<"/">>),
+      {ok, Req5} = cowboy_req:reply(302, [
+          {<<"location">>, Location}
+        ], <<>>, Req4),
+      {ok, Req5, undefined};
     % redirect and new location
     {redirect, Location, Req3} ->
       {ok, Req4} = cowboy_req:reply(302, [
