@@ -53,7 +53,7 @@ set(undefined, {Name, _Secret, _MaxAge, Path}, Req) ->
       [http_only, {max_age, 0}, {path, Path}], Req);
 
 set(Session, {Name, Secret, MaxAge, Path}, Req) ->
-  Cookie = termit:encode_base64(Session, Secret),
+  Cookie = termit:encode_base64(Session, Secret, MaxAge),
   cowboy_req:set_resp_cookie(Name, Cookie,
       [http_only, {max_age, MaxAge}, {path, Path}], Req).
 
