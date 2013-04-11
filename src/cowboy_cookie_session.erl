@@ -29,11 +29,11 @@
 %% Get session from cookie.
 %% -----------------------------------------------------------------------------
 
-get({Name, Secret, MaxAge, _Path}, Req) ->
+get({Name, Secret, _MaxAge, _Path}, Req) ->
   % get cookie
   {Cookie, Req2} = cowboy_req:cookie(Name, Req),
   % deserialize session
-  Session = case termit:decode_base64(Cookie, Secret, MaxAge) of
+  Session = case termit:verify_token(Cookie, Secret) of
     {error, _Reason} ->
       undefined;
     % {ok, undefined} ->
@@ -53,7 +53,7 @@ set(undefined, {Name, _Secret, _MaxAge, Path}, Req) ->
       [http_only, {max_age, 0}, {path, Path}], Req);
 
 set(Session, {Name, Secret, MaxAge, Path}, Req) ->
-  Cookie = termit:encode_base64(Session, Secret, MaxAge),
+  Cookie = termit:issue_token(Session, Secret, MaxAge),
   cowboy_req:set_resp_cookie(Name, Cookie,
       [http_only, {max_age, MaxAge}, {path, Path}], Req).
 
