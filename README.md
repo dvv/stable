@@ -3,6 +3,95 @@ Stable
 
 Collection of assorted helpers for [Cowboy](https://github.com/extend/cowboy) web server.
 
+cowboy_resource
+--------------
+
+Generic handler for RESTful resources. Supercedes `cowboy_rpc`.
+
+Router configuration:
+```erlang
+%% in env key of protocol configuration:
+{"/api/:bucket[/:id]", cowboy_resource, [{handler, pecypc_test},
+  % custom options
+  {token_secret, <<"!cowboyftw!">>}
+]},
+```
+
+Handler should be a module implementing `cowboy_resource_handler` behaviour:
+```erlang
+-module(pecypc_test).
+
+-behaviour(cowboy_resource_handler).
+-export([
+    allowed/2,
+    authorize/3,
+    call/3,
+    create/3,
+    delete/2,
+    get/2,
+    put/3,
+    update/3
+  ]).
+
+authorize(Type, Credentials, _Options) ->
+  {ok, {<<"foo">>, <<"you-are-admin.*">>}}.
+
+allowed(_, none) ->
+  false;
+allowed(Method, {_Identity, _Scope}) ->
+  true.
+
+get(Query, Options) ->
+  {ok, [{<<"x">>, <<"y">>}]}.
+
+create(Entity, Query, Options) ->
+  {ok, Entity}.
+
+put(Entity, Query, Options) ->
+  {ok, <<"PUT">>}.
+
+update(Changes, Query, Options) ->
+  {ok, <<"UPDATED">>}.
+
+delete(Query, Options) ->
+  {ok, <<"DELETED">>}.
+
+call(<<"add">>, [X, Y], _Options) when is_number(X) ->
+  {ok, X + Y};
+call(_, _, _) ->
+  {error, <<"NYI">>}.
+```
+
+Call:
+```sh
+curl -H 'Accept: application/json' localhost:8080/api/foo/1
+{"x":"y"}
+
+curl -H 'Accept: application/x-www-form-urlencoded' localhost:8080/api/foo/1
+x=y
+
+curl -H 'Accept: application/json' -H 'Content-Type: application/json' -d '{"a": "b"}' localhost:8080/api/foo
+{"a":"b"}
+
+curl -H 'Accept: application/json' -H 'Content-Type: application/x-www-form-urlencoded' -d 'a=b' localhost:8080/api/foo
+{"a":"b"}
+
+curl -H 'Accept: application/json' -H 'Content-Type: application/json' -d '{"a": "b"}' -X PUT localhost:8080/api/foo/1
+"PUT"
+
+curl -H 'Accept: application/json' -H 'Content-Type: application/json' -d '{"a": "c"}' -X PATCH localhost:8080/api/foo
+"UPDATED"
+
+curl -H 'Accept: application/json' -X DELETE localhost:8080/api/foo/1
+"DELETED"
+
+curl -H 'Content-Type: application/rpc+json' -d '[["add", [123, 321], "id999"], ["add", [true, 321], "id998"]]' localhost:8080/api/foo
+[[null, 444, "id999"], ["badarg", null, "id998"]]
+
+curl -H 'Content-Type: application/rpc+json' -d '[["nonexisting", [123, 321], "id997"]]' localhost:8080/api/foo
+[["NYI", null, "id997"]]
+```
+
 cowboy_patch
 --------------
 
