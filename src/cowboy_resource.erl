@@ -7,11 +7,15 @@
 -module(cowboy_resource).
 -author('Vladimir Dronnikov <dronnikov@gmail.com>').
 
+% -behaviour(cowboy_handler).
+-export([
+    init/3
+  ]).
+
 % -behaviour(cowboy_rest_handler).
 -export([
-    init/3,
-    terminate/3,
     rest_init/2,
+    rest_terminate/3,
     % resource_available/2,
     allowed_methods/2,
     % malformed_request/2,
@@ -22,6 +26,14 @@
     content_types_provided/2,
     delete_resource/2,
     delete_completed/2
+  ]).
+
+-behaviour(cowboy_websocket_handler).
+-export([
+    websocket_init/3,
+    websocket_handle/3,
+    websocket_info/3,
+    websocket_terminate/3
   ]).
 
 % getters
@@ -65,8 +77,13 @@ init(_Transport, Req, Opts) ->
   {Method, Req5} = cowboy_req:method(Req4),
   % extract options
   {_, Handler} = lists:keyfind(handler, 1, Opts),
-  % go rest
-  {upgrade, protocol, cowboy_rest, Req5, #state{
+  % distinguish websocket and rest
+  NewProto = case cowboy_req:header(<<"upgrade">>, Req5) of
+    {<<"websocket">>, Req6} -> cowboy_websocket;
+    {_, Req6} -> cowboy_rest
+  end,
+  % upgrade
+  {upgrade, protocol, NewProto, Req6, #state{
       method = Method,
       % params = Params,
       params = lists:ukeymerge(1,
@@ -77,11 +94,11 @@ init(_Transport, Req, Opts) ->
       handler = Handler
     }}.
 
-terminate(_Reason, _Req, _State) ->
-  ok.
-
 rest_init(Req, State) ->
   {ok, Req, State}.
+
+rest_terminate(_Reason, _Req, _State) ->
+  ok.
 
 % resource_available(Req, State) ->
 %   {true, Req, State}.
@@ -131,6 +148,8 @@ try_authorize(Req, State = #state{params = Params, handler = Handler},
 %% NB: POST carries batch RPC and access will be checked later on
 %%   for each request in the batch.
 %%
+%% @fixme should be active if Content-Type: application/rpc+json
+%%
 % forbidden(Req, State = #state{method = <<"POST">>}) ->
 %   {false, Req, State};
 %%
@@ -146,7 +165,8 @@ handler_for(<<"PUT">>) -> put;
 handler_for(<<"PATCH">>) -> update;
 handler_for(<<"DELETE">>) -> delete;
 handler_for(<<"OPTIONS">>) -> info;
-handler_for(<<"HEAD">>) -> get.
+handler_for(<<"HEAD">>) -> get;
+handler_for(Other) -> Other.
 
 call_allowed(Method, Auth, Handler) ->
   case erlang:function_exported(Handler, allowed, 2) of
@@ -490,3 +510,35 @@ build_qs([]) ->
 build_qs(List) when is_list(List) ->
   << "&", R/binary >> = << << "&", (build_qs(X))/binary >> || X <- List >>,
   R.
+
+%%
+%% -----------------------------------------------------------------------------
+%% WebSocket.
+%% -----------------------------------------------------------------------------
+%%
+
+websocket_init(_Transport, Req, State) ->
+  {ok, Req, State}.
+
+websocket_terminate(_Reason, _Req, _State) ->
+  ok.
+
+websocket_handle({text, Msg}, Req, State) ->
+  % @todo make it streaming
+  case jsx:decode(Msg, [{error_handler, fun(_, _, _) -> {error, badarg} end}])
+  of
+    {error, _} ->
+      {reply, {text, <<"einval">>}, Req, State};
+    {incomplete, _} ->
+      {reply, {text, <<"einval">>}, Req, State};
+    Data ->
+      State2 = State#state{body = Data, auth = none},
+      {reply, {text, jsx:encode(batch_rpc(State2))}, Req, State}
+  end;
+websocket_handle(_Data, Req, State) ->
+  {ok, Req, State}.
+
+websocket_info({timeout, _Ref, Msg}, Req, State) ->
+  {reply, {text, Msg}, Req, State};
+websocket_info(_Info, Req, State) ->
+  {ok, Req, State}.
