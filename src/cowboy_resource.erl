@@ -314,7 +314,7 @@ put_resource(Req, State = #state{method = <<"POST">>, body = Data,
       {halt, respond(400, undefined, Req), State};
     {goto, Location} ->
       % {true, cowboy_req:set_resp_header(<<"location">>, Location, Req), State}
-      {Location, Req, State}
+      {{true, Location}, Req, State}
   catch Class:Reason ->
     error_logger:error_msg(
       "** API handler ~p terminating in create/3~n"
