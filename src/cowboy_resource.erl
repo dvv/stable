@@ -252,7 +252,7 @@ get_resource(Req, State = #state{
 %% - set response body and {true, Req, State} --> 200 OK
 %%
 %% The following applies only on POST
-%% - {Location, Req, State} --> 303 See Other
+%% - {{true, Location}, Req, State} --> 303 See Other
 %%
 put_json(Req, State) ->
   % @todo make it streaming
