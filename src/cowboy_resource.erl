@@ -7,9 +7,9 @@
 -module(cowboy_resource).
 -author('Vladimir Dronnikov <dronnikov@gmail.com>').
 
-% -behaviour(cowboy_handler).
+-behaviour(cowboy_sub_protocol).
 -export([
-    init/3
+    upgrade/4
   ]).
 
 % -behaviour(cowboy_rest_handler).
@@ -61,7 +61,7 @@
     handler :: module()
   }).
 
-init(_Transport, Req, Opts) ->
+upgrade(Req, _Env, Handler, Opts) ->
   Req2 = case lists:keyfind(patch, 1, Opts) of
     {_, true} ->
       % apply apigen pragmatic REST recommendations
@@ -75,15 +75,12 @@ init(_Transport, Req, Opts) ->
   {Params, Req3} = cowboy_req:bindings(Req2),
   {Query, Req4} = cowboy_req:qs_vals(Req3),
   {Method, Req5} = cowboy_req:method(Req4),
-  % extract options
-  {_, Handler} = lists:keyfind(handler, 1, Opts),
   % distinguish websocket and rest
   NewProto = case cowboy_req:header(<<"upgrade">>, Req5) of
     {<<"websocket">>, Req6} -> cowboy_websocket;
     {_, Req6} -> cowboy_rest
   end,
-  % upgrade
-  {upgrade, protocol, NewProto, Req6, #state{
+  NewProto:upgrade(Req6, Env, ?MODULE, #state{
       method = Method,
       % params = Params,
       params = lists:ukeymerge(1,

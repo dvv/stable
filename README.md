@@ -11,15 +11,16 @@ Generic handler for RESTful resources. Supercedes `cowboy_rpc`.
 Router configuration:
 ```erlang
 %% in env key of protocol configuration:
-{"/api/:bucket[/:id]", cowboy_resource, [{handler, pecypc_test},
-  % custom options
-  {token_secret, <<"!cowboyftw!">>}
-]},
+{"/api/:bucket[/:id]", pecypc_test, [{token_secret, <<"!cowboyftw!">>}]},
 ```
 
 Handler should be a module implementing `cowboy_resource_handler` behaviour:
 ```erlang
 -module(pecypc_test).
+
+-export([
+    init/3
+  ]).
 
 -behaviour(cowboy_resource_handler).
 -export([
@@ -32,6 +33,9 @@ Handler should be a module implementing `cowboy_resource_handler` behaviour:
     put/3,
     update/3
   ]).
+
+init(_Transport, Req, Options) ->
+  {upgrade, protocol, cowboy_resource}.
 
 authorize(Type, Credentials, _Options) ->
   {ok, {<<"foo">>, <<"you-are-admin.*">>}}.
