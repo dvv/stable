@@ -319,7 +319,6 @@ rpc_json(Req, State) ->
 %%
 put_resource(Req, State = #state{method = <<"POST">>, body = Data,
     params = Params, handler = Handler, options = Opts, auth = Auth}) ->
-  % try Handler:handle_call(<<"create">>, [Data, Params], [{auth, Auth} | Opts]) of
   try Handler:create(Data, Params, [{auth, Auth} | Opts]) of
     {ok, Body} ->
       {true, set_resp_body(Body, Req), State};
@@ -330,7 +329,6 @@ put_resource(Req, State = #state{method = <<"POST">>, body = Data,
     error ->
       {halt, respond(400, undefined, Req), State};
     {goto, Location} ->
-      % {true, cowboy_req:set_resp_header(<<"location">>, Location, Req), State}
       {{true, Location}, Req, State}
   catch Class:Reason ->
     error_logger:error_msg(
