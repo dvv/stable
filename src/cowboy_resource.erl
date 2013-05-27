@@ -61,7 +61,7 @@
     handler :: module()
   }).
 
-upgrade(Req, _Env, Handler, Opts) ->
+upgrade(Req, Env, Handler, Opts) ->
   Req2 = case lists:keyfind(patch, 1, Opts) of
     {_, true} ->
       % apply apigen pragmatic REST recommendations
@@ -89,7 +89,7 @@ upgrade(Req, _Env, Handler, Opts) ->
       querystring = Query,
       options = Opts,
       handler = Handler
-    }}.
+    }).
 
 rest_init(Req, State) ->
   {ok, Req, State}.
