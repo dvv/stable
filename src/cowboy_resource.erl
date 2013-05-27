@@ -64,25 +64,32 @@
   }).
 
 upgrade(Req, Env, Handler, Opts) ->
+  % apply apigen pragmatic REST recommendations
   Req2 = case lists:keyfind(patch, 1, Opts) of
     {_, true} ->
-      % apply apigen pragmatic REST recommendations
       cowboy_patch:patch_pragmatic_rest(
-           cowboy_patch:patch_method(
-           cowboy_patch:patch_headers(Req)));
+      cowboy_patch:patch_method(
+      cowboy_patch:patch_headers(Req)));
     false ->
       Req
   end,
-  % extract request info
-  {Params, Req3} = cowboy_req:bindings(Req2),
-  {Query, Req4} = cowboy_req:qs_vals(Req3),
-  {Method, Req5} = cowboy_req:method(Req4),
-  % distinguish websocket and rest
-  NewProto = case cowboy_req:header(<<"upgrade">>, Req5) of
-    {<<"websocket">>, Req6} -> cowboy_websocket;
-    {_, Req6} -> cowboy_rest
+  % enable CORS
+  Req3 = case lists:keyfind(cors, 1, Opts) of
+    {_, AllowedOrigins} ->
+      cors(Req2, AllowedOrigins);
+    false ->
+      Req2
   end,
-  NewProto:upgrade(Req6, Env, ?MODULE, #state{
+  % extract request info
+  {Params, Req4} = cowboy_req:bindings(Req3),
+  {Query, Req5} = cowboy_req:qs_vals(Req4),
+  {Method, Req6} = cowboy_req:method(Req5),
+  % distinguish websocket and rest
+  NewProto = case cowboy_req:header(<<"upgrade">>, Req6) of
+    {<<"websocket">>, Req7} -> cowboy_websocket;
+    {_, Req7} -> cowboy_rest
+  end,
+  NewProto:upgrade(Req7, Env, ?MODULE, #state{
       method = Method,
       % params = Params,
       params = lists:ukeymerge(1,
@@ -180,19 +187,6 @@ call_allowed(Method, Auth, Handler) ->
 %%
 % options(Req, State) ->
 %   {ok, Req, State}.
-
-cors(Req) ->
-  % @todo validate
-  Req2 = cowboy_req:set_resp_header(<<"access-control-allow-origin">>, <<"*">>, Req),
-  % Access-Control-Allow-Methods: POST, GET, PUT, PATCH, DELETE, OPTIONS
-  Req3 = cowboy_req:set_resp_header(<<"access-control-allow-credentials">>, <<"true">>, Req2),
-  Req4 = cowboy_req:set_resp_header(<<"access-control-allow-headers">>, <<"content-type, if-modified-since, authorization, x-requested-with">>, Req3),
-  Req4.
-
-cache(Req) ->
-  % @todo set right headers
-  % @todo move to generate_etag?
-  Req.
 
 %%
 %% Enumerate content types resource may process.
@@ -502,6 +496,28 @@ respond(Status, Reason, Req) ->
 
 set_resp_body(Body, Req) ->
   cowboy_req:set_resp_body(serialize(Body, Req), Req).
+
+%%
+%% Setup CORS
+%%
+cors(Req, AllowedOrigins) ->
+  % @todo validate
+  Req2 = cowboy_req:set_resp_header(<<"access-control-allow-origin">>,
+      AllowedOrigins, Req),
+  % Access-Control-Allow-Methods: POST, GET, PUT, PATCH, DELETE, OPTIONS
+  Req3 = cowboy_req:set_resp_header(<<"access-control-allow-credentials">>,
+      <<"true">>, Req2),
+  cowboy_req:set_resp_header(<<"access-control-allow-headers">>,
+      <<"content-type, if-modified-since, authorization, x-requested-with">>,
+      Req3).
+
+%%
+%% Setup caching
+%%
+cache(Req) ->
+  % @todo set right headers
+  % @todo move to generate_etag?
+  Req.
 
 %%
 %% -----------------------------------------------------------------------------
