@@ -24,6 +24,7 @@
     % options/2,
     content_types_accepted/2,
     content_types_provided/2,
+    charsets_provided/2,
     delete_resource/2,
     delete_completed/2
   ]).
@@ -186,10 +187,12 @@ call_allowed(Method, Auth, Handler) ->
 %%
 content_types_accepted(Req, State) ->
   {[
-    {{<<"application">>, <<"json">>, []}, put_json},
-    {{<<"application">>, <<"x-www-form-urlencoded">>, []}, put_form},
+    % {{<<"application">>, <<"json">>, [
+    %     {<<"charset">>, <<"utf-8">>}]}, put_json},
+    {{<<"application">>, <<"json">>, '*'}, put_json},
+    {{<<"application">>, <<"x-www-form-urlencoded">>, '*'}, put_form},
     % application/rpc+json accepts batch of requests
-    {{<<"application">>, <<"rpc+json">>, []}, rpc_json}
+    {{<<"application">>, <<"rpc+json">>, '*'}, rpc_json}
   ], Req, State}.
 
 %%
@@ -201,6 +204,12 @@ content_types_provided(Req, State) ->
     % @todo disable if application/rpc+json data was provided
     {{<<"application">>, <<"x-www-form-urlencoded">>, []}, get_resource}
   ], Req, State}.
+
+%%
+%% Enumerate character sets resource may return.
+%%
+charsets_provided(Req, State) ->
+  {[<<"utf-8">>], Req, State}.
 
 %%
 %% -----------------------------------------------------------------------------
