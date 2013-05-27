@@ -46,6 +46,7 @@
 -export([
     put_form/2,
     put_json/2,
+    put_plain/2,
     rpc_json/2
   ]).
 
@@ -202,6 +203,7 @@ content_types_accepted(Req, State) ->
     %     {<<"charset">>, <<"utf-8">>}]}, put_json},
     {{<<"application">>, <<"json">>, '*'}, put_json},
     {{<<"application">>, <<"x-www-form-urlencoded">>, '*'}, put_form},
+    {{<<"text">>, <<"plain">>, '*'}, put_plain},
     % application/rpc+json accepts batch of requests
     {{<<"application">>, <<"rpc+json">>, '*'}, rpc_json}
   ], Req, State}.
@@ -240,8 +242,9 @@ get_resource(Req, State = #state{
     params = Params, handler = Handler, options = Opts, auth = Auth}) ->
   try Handler:get(Params, [{auth, Auth} | Opts]) of
     {ok, Result} ->
-      % @todo CORS
       {serialize(Result, Req), Req, State};
+    {error, enoent} ->
+      {halt, respond(404, <<"enoent">>, Req), State};
     {error, Reason} ->
       {halt, respond(400, Reason, Req), State};
     error ->
@@ -288,6 +291,10 @@ put_form(Req, State) ->
   {ok, Result, Req2} = cowboy_req:body_qs(Req),
   put_resource(Req2, State#state{body = Result}).
 
+put_plain(Req, State) ->
+  {ok, Result, Req2} = cowboy_req:body(Req),
+  put_resource(Req2, State#state{body = Result}).
+
 %%
 %% Take batch of requests from body, return batch of responses.
 %% Requests processing delegated to application's handle(Method, [Args]).
@@ -324,6 +331,8 @@ put_resource(Req, State = #state{method = <<"POST">>, body = Data,
       {true, set_resp_body(Body, Req), State};
     ok ->
       {true, Req, State};
+    {error, eexist} ->
+      {halt, respond(409, <<"eexist">>, Req), State};
     {error, Reason} ->
       {halt, respond(400, Reason, Req), State};
     error ->
@@ -346,6 +355,8 @@ put_resource(Req, State = #state{method = <<"PUT">>, body = Data,
       {true, Req, State};
     {ok, Body} ->
       {true, set_resp_body(Body, Req), State};
+    {error, eexist} ->
+      {halt, respond(409, <<"eexist">>, Req), State};
     {error, Reason} ->
       {halt, respond(400, Reason, Req), State};
     error ->
@@ -366,6 +377,8 @@ put_resource(Req, State = #state{method = <<"PATCH">>, body = Data,
       {true, Req, State};
     {ok, Body} ->
       {true, set_resp_body(Body, Req), State};
+    {error, enoent} ->
+      {halt, respond(404, <<"enoent">>, Req), State};
     {error, Reason} ->
       {halt, respond(400, Reason, Req), State};
     error ->
@@ -396,6 +409,8 @@ delete_resource(Req, State = #state{
       {true, Req, State#state{completed = false}};
     error ->
       {halt, respond(400, undefined, Req), State};
+    {error, enoent} ->
+      {halt, respond(404, <<"enoent">>, Req), State};
     {error, Reason} ->
       {halt, respond(400, Reason, Req), State}
   catch Class:Reason ->
@@ -506,7 +521,9 @@ encode({<<"application">>, <<"x-www-form-urlencoded">>, []}, Body, _Req) ->
 encode({<<"application">>, <<"json">>, []}, Body, _Req) ->
   jsx:encode(Body);
 encode({<<"application">>, <<"rpc+json">>, []}, Body, _Req) ->
-  jsx:encode(Body).
+  jsx:encode(Body);
+encode({<<"text">>, <<"plain">>, []}, Body, _Req) ->
+  Body.
 
 %% NB: Cowboy issue #479
 build_qs(Bin) when is_binary(Bin) ->

@@ -44,6 +44,7 @@
   {ok, Result :: result()} |
   {goto, Where :: location()} |
   error |
+  {error, enoent} |
   {error, Reason :: error()}.
 
 %%
@@ -62,6 +63,7 @@
   {ok, Result :: result()} |
   {goto, Where :: location()} |
   error |
+  {error, eexist} |
   {error, Reason :: error()}.
 
 %%
@@ -79,6 +81,7 @@
   ok |
   {ok, Result :: result()} |
   error |
+  {error, eexist} |
   {error, Reason :: error()}.
 
 %%
@@ -96,6 +99,7 @@
   ok |
   {ok, Result :: result()} |
   error |
+  {error, enoent} |
   {error, Reason :: error()}.
 
 %%
@@ -111,6 +115,7 @@
   ok |
   accepted |
   error |
+  {error, enoent} |
   {error, Reason :: error()}.
 
 %%
