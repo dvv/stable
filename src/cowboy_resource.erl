@@ -177,10 +177,21 @@ call_allowed(Method, Auth, Handler) ->
 %%
 %% Called on OPTIONS. Use to set custom headers. Note returned tag is 'ok'.
 %%
-%% @todo Allow-Origin-* here?
-%%
 % options(Req, State) ->
 %   {ok, Req, State}.
+
+cors(Req) ->
+  % @todo validate
+  Req2 = cowboy_req:set_resp_header(<<"access-control-allow-origin">>, <<"*">>, Req),
+  % Access-Control-Allow-Methods: POST, GET, PUT, PATCH, DELETE, OPTIONS
+  Req3 = cowboy_req:set_resp_header(<<"access-control-allow-credentials">>, <<"true">>, Req2),
+  Req4 = cowboy_req:set_resp_header(<<"access-control-allow-headers">>, <<"content-type, if-modified-since, authorization, x-requested-with">>, Req3),
+  Req4.
+
+cache(Req) ->
+  % @todo set right headers
+  % @todo move to generate_etag?
+  Req.
 
 %%
 %% Enumerate content types resource may process.
