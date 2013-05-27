@@ -54,7 +54,7 @@
     method :: binary(),
     params :: proplist(),
     body :: proplist(),
-    query :: proplist(),
+    querystring :: proplist(),
     auth :: {Identity :: term(), AllowedScope :: term()},
     completed = false :: boolean(),
     options :: proplist(),
@@ -89,7 +89,7 @@ init(_Transport, Req, Opts) ->
       params = lists:ukeymerge(1,
           lists:ukeysort(1, Params),
           lists:ukeysort(1, Query)),
-      query = Query,
+      querystring = Query,
       options = Opts,
       handler = Handler
     }}.

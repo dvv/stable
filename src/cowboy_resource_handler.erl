@@ -3,7 +3,7 @@
 
 -type proplist() :: list({term(), term()}).
 -type method() :: binary().
--type query() :: proplist().
+-type querystring() :: proplist().
 -type body() :: proplist().
 -type options() :: proplist().
 -type location() :: binary().
@@ -39,7 +39,7 @@
 %%   authorization info obtained in authorize/3.
 %%
 -callback get(
-    Query :: query(),
+    Query :: querystring(),
     Options :: options()) ->
   {ok, Result :: result()} |
   {goto, Where :: location()} |
@@ -56,7 +56,7 @@
 %%
 -callback create(
     Body :: body(),
-    Query :: query(),
+    Query :: querystring(),
     Options :: options()) ->
   ok |
   {ok, Result :: result()} |
@@ -74,7 +74,7 @@
 %%
 -callback put(
     Body :: body(),
-    Query :: query(),
+    Query :: querystring(),
     Options :: options()) ->
   ok |
   {ok, Result :: result()} |
@@ -91,7 +91,7 @@
 %%
 -callback update(
     Body :: body(),
-    Query :: query(),
+    Query :: querystring(),
     Options :: options()) ->
   ok |
   {ok, Result :: result()} |
@@ -106,7 +106,7 @@
 %%   authorization info obtained in authorize/3.
 %%
 -callback delete(
-    Query :: query(),
+    Query :: querystring(),
     Options :: options()) ->
   ok |
   accepted |
