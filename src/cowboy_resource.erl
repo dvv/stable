@@ -207,9 +207,10 @@ content_types_accepted(Req, State) ->
 %%
 content_types_provided(Req, State) ->
   {[
-    {{<<"application">>, <<"json">>, []}, get_resource},
+    {{<<"application">>, <<"json">>, '*'}, get_resource},
     % @todo disable if application/rpc+json data was provided
-    {{<<"application">>, <<"x-www-form-urlencoded">>, []}, get_resource}
+    {{<<"application">>, <<"x-www-form-urlencoded">>, '*'}, get_resource},
+    {{<<"text">>, <<"html">>, '*'}, get_resource}
   ], Req, State}.
 
 %%
@@ -532,14 +533,30 @@ serialize(Body, Req) ->
   encode(CType, Body, Req).
 
 %% NB: first argument should match those of content_types_*/2
-encode({<<"application">>, <<"x-www-form-urlencoded">>, []}, Body, _Req) ->
+encode({<<"application">>, <<"x-www-form-urlencoded">>, _Params}, Body, _Req) ->
   build_qs(Body);
-encode({<<"application">>, <<"json">>, []}, Body, _Req) ->
+encode({<<"application">>, <<"json">>, _Params}, Body, _Req) ->
   jsx:encode(Body);
-encode({<<"application">>, <<"rpc+json">>, []}, Body, _Req) ->
+encode({<<"application">>, <<"rpc+json">>, _Params}, Body, _Req) ->
   jsx:encode(Body);
-encode({<<"text">>, <<"plain">>, []}, Body, _Req) ->
-  Body.
+%% NB: @fixme experimental template render support
+%% Accept: text/html; template=foo --> foo:render(Body)
+encode({<<"text">>, <<"html">>, Params}, Body, _Req) ->
+  case lists:keyfind(<<"template">>, 1, Params) of
+    false ->
+      jsx:encode(Body);
+    {_, TemplateName} ->
+      try
+        TemplateModule = binary_to_existing_atom(TemplateName, latin1),
+        {ok, IoList} = TemplateModule:render(Body),
+        IoList
+      catch
+        _:badarg ->
+          <<"no render module">>;
+        _:undef ->
+          <<"bad render module">>
+      end
+  end.
 
 %% NB: Cowboy issue #479
 build_qs(Bin) when is_binary(Bin) ->
