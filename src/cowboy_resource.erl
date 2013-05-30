@@ -22,6 +22,7 @@
     is_authorized/2,
     forbidden/2,
     % options/2,
+    resource_exists/2,
     content_types_accepted/2,
     content_types_provided/2,
     charsets_provided/2,
@@ -187,6 +188,15 @@ call_allowed(Method, Auth, Handler) ->
 %%
 % options(Req, State) ->
 %   {ok, Req, State}.
+
+%%
+%% Is resource exist?
+%% NB: controls as well status code returned from put_resource when POST
+%%
+resource_exists(Req, State = #state{method = <<"POST">>}) ->
+  {false, Req, State};
+resource_exists(Req, State) ->
+  {true, Req, State}.
 
 %%
 %% Enumerate content types resource may process.
