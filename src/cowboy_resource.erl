@@ -244,8 +244,12 @@ get_resource(Req, State = #state{
       {halt, respond(400, Reason, Req), State};
     error ->
       {halt, respond(400, undefined, Req), State};
+    {goto, Location = << $/, _/binary >> } ->
+      {halt, cowboy_req:set_resp_header(<<"location">>, Location, Req), State};
     {goto, Location} ->
-      {halt, cowboy_req:set_resp_header(<<"location">>, Location, Req), State}
+      {BasePath, Req2} = cowboy_req:path(Req),
+      {halt, cowboy_req:set_resp_header(<<"location">>,
+          << BasePath/binary, $/, Location/binary >>, Req2), State}
   catch Class:Reason ->
     error_logger:error_msg(
       "** API handler ~p terminating in get/3~n"
@@ -332,8 +336,11 @@ put_resource(Req, State = #state{method = <<"POST">>, body = Data,
       {halt, respond(400, Reason, Req), State};
     error ->
       {halt, respond(400, undefined, Req), State};
+    {goto, Location = << $/, _/binary >> } ->
+      {{true, Location}, Req, State};
     {goto, Location} ->
-      {{true, Location}, Req, State}
+      {BasePath, Req2} = cowboy_req:path(Req),
+      {{true, << BasePath/binary, $/, Location/binary >>}, Req2, State}
   catch Class:Reason ->
     error_logger:error_msg(
       "** API handler ~p terminating in create/3~n"
