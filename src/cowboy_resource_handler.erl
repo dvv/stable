@@ -55,7 +55,7 @@
 %% Options is proplist options specified for handler in router augmented with
 %%   authorization info obtained in authorize/3.
 %%
--callback create(
+-callback post(
     Body :: body(),
     Query :: querystring(),
     Options :: options()) ->
@@ -92,7 +92,7 @@
 %% Options is proplist options specified for handler in router augmented with
 %%   authorization info obtained in authorize/3.
 %%
--callback update(
+-callback patch(
     Body :: body(),
     Query :: querystring(),
     Options :: options()) ->

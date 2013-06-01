@@ -167,11 +167,11 @@ forbidden(Req, State = #state{method = Method,
   {not call_allowed(handler_for(Method), Auth, Handler), Req, State}.
 
 handler_for(<<"GET">>) -> get;
-handler_for(<<"POST">>) -> create;
+handler_for(<<"POST">>) -> post;
 handler_for(<<"PUT">>) -> put;
-handler_for(<<"PATCH">>) -> update;
+handler_for(<<"PATCH">>) -> patch;
 handler_for(<<"DELETE">>) -> delete;
-handler_for(<<"OPTIONS">>) -> info;
+handler_for(<<"OPTIONS">>) -> options;
 handler_for(<<"HEAD">>) -> get;
 handler_for(Other) -> Other.
 
@@ -259,7 +259,7 @@ get_resource(Req, State = #state{
     {goto, Location} ->
       {BasePath, Req2} = cowboy_req:path(Req),
       {halt, cowboy_req:set_resp_header(<<"location">>,
-          << BasePath/binary, $/, Location/binary >>, Req2), State}
+          [BasePath, $/, Location], Req2), State}
   catch Class:Reason ->
     error_logger:error_msg(
       "** API handler ~p terminating in get/3~n"
@@ -335,7 +335,7 @@ rpc_json(Req, State) ->
 %%
 put_resource(Req, State = #state{method = <<"POST">>, body = Data,
     params = Params, handler = Handler, options = Opts, auth = Auth}) ->
-  try Handler:create(Data, Params, [{auth, Auth} | Opts]) of
+  try Handler:post(Data, Params, [{auth, Auth} | Opts]) of
     {ok, Body} ->
       {true, set_resp_body(Body, Req), State};
     ok ->
@@ -350,10 +350,10 @@ put_resource(Req, State = #state{method = <<"POST">>, body = Data,
       {{true, Location}, Req, State};
     {goto, Location} ->
       {BasePath, Req2} = cowboy_req:path(Req),
-      {{true, << BasePath/binary, $/, Location/binary >>}, Req2, State}
+      {{true, [BasePath, $/, Location]}, Req2, State}
   catch Class:Reason ->
     error_logger:error_msg(
-      "** API handler ~p terminating in create/3~n"
+      "** API handler ~p terminating in post/3~n"
       "   for the reason ~p:~p~n** State was ~p~n"
       "** Stacktrace: ~p~n~n",
       [Handler, Class, Reason, State, erlang:get_stacktrace()]),
@@ -384,7 +384,7 @@ put_resource(Req, State = #state{method = <<"PUT">>, body = Data,
 
 put_resource(Req, State = #state{method = <<"PATCH">>, body = Data,
     params = Params, handler = Handler, options = Opts, auth = Auth}) ->
-  try Handler:update(Data, Params, [{auth, Auth} | Opts]) of
+  try Handler:patch(Data, Params, [{auth, Auth} | Opts]) of
     ok ->
       {true, Req, State};
     {ok, Body} ->
@@ -397,7 +397,7 @@ put_resource(Req, State = #state{method = <<"PATCH">>, body = Data,
       {halt, respond(400, undefined, Req), State}
   catch Class:Reason ->
     error_logger:error_msg(
-      "** API handler ~p terminating in update/3~n"
+      "** API handler ~p terminating in patch/3~n"
       "   for the reason ~p:~p~n** State was ~p~n"
       "** Stacktrace: ~p~n~n",
       [Handler, Class, Reason, State, erlang:get_stacktrace()]),
