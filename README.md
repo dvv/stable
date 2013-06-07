@@ -27,11 +27,11 @@ Handler should be a module implementing `cowboy_resource_handler` behaviour:
     allowed/2,
     authorize/3,
     call/3,
-    create/3,
     delete/2,
     get/2,
-    put/3,
-    update/3
+    patch/3,
+    post/3,
+    put/3
   ]).
 
 init(_Transport, Req, Options) ->
@@ -48,13 +48,13 @@ allowed(Method, {_Identity, _Scope}) ->
 get(Query, Options) ->
   {ok, [{<<"x">>, <<"y">>}]}.
 
-create(Entity, Query, Options) ->
+post(Entity, Query, Options) ->
   {ok, Entity}.
 
 put(Entity, Query, Options) ->
   {ok, <<"PUT">>}.
 
-update(Changes, Query, Options) ->
+patch(Changes, Query, Options) ->
   {ok, <<"UPDATED">>}.
 
 delete(Query, Options) ->
