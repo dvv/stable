@@ -27,8 +27,8 @@ patch_headers(Req) ->
   {Headers, Req3} = cowboy_req:headers(Req2),
   {Headers2, Qs2} = lists:foldl(fun (Token = {Name, Value}, {Heads, Vars}) ->
     case Name of
-      <<$_, $x, $-, Rest/binary>> ->
-        {[{Rest, Value} | Heads], Vars};
+      << $_, $x, $-, Head/binary >> ->
+        {[{Head, Value} | Heads], Vars};
       _Else ->
         {Heads, [Token | Vars]}
     end
