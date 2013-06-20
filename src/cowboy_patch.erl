@@ -124,6 +124,7 @@ patch_pragmatic_rest(Req) ->
 is_meta_param({<<"fields">>, _}) -> true;
 is_meta_param({<<"limit">>, _}) -> true;
 is_meta_param({<<"offset">>, _}) -> true;
+is_meta_param({<<"sort">>, _}) -> true;
 is_meta_param({<<"method">>, _}) -> true;
 is_meta_param({<<"suppress_response_codes">>, _}) -> true;
 is_meta_param({_, _}) -> false.
