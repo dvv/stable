@@ -84,7 +84,6 @@ method(Headers, [Override | Tail]) ->
 patch_pragmatic_rest(Req) ->
   [Headers, Path, Method] = cowboy_req:get([headers, path, method], Req),
   % honor URI suffix (overrides Accept: if any)
-  % @todo: mimetypes is gen_server-based -- may be bottleneck
   Req2 = case mimetypes:filename(Path) of
     [<<"application/octet-stream">>] ->
       Req;
