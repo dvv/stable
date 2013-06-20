@@ -83,7 +83,8 @@ method(Headers, [Override | Tail]) ->
 
 patch_pragmatic_rest(Req) ->
   [Headers, Path, Method] = cowboy_req:get([headers, path, method], Req),
-  % honor URI suffix (overrides Accept: if any)
+  % honor URI suffix (overrides Accept:, if any)
+  % e.g. GET /foo.json --> GET /foo Accept: application/json
   Req2 = case mimetypes:filename(Path) of
     [<<"application/octet-stream">>] ->
       Req;
