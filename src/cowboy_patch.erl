@@ -128,12 +128,12 @@ is_meta_param({<<"method">>, _}) -> true;
 is_meta_param({<<"suppress_response_codes">>, _}) -> true;
 is_meta_param({_, _}) -> false.
 
+binary_join([], _Sep) ->
+  <<>>;
 binary_join([H], _Sep) ->
   << H/binary >>;
-binary_join([H|T], Sep) ->
-  << H/binary, Sep/binary, (binary_join(T, Sep))/binary >>;
-binary_join([], _Sep) ->
-  <<>>.
+binary_join([H | T], Sep) ->
+  << H/binary, Sep/binary, (binary_join(T, Sep))/binary >>.
 
 suppress_response_codes(_, Headers, Body, Req) ->
   {ok, Req2} = cowboy_req:reply(200, Headers, Body, Req),
