@@ -65,21 +65,12 @@
   }).
 
 upgrade(Req, Env, Handler, Opts) ->
-  % apply apigen pragmatic REST recommendations
-  Req2 = case lists:keyfind(patch, 1, Opts) of
-    {_, true} ->
-      cowboy_patch:patch_pragmatic_rest(
-      cowboy_patch:patch_method(
-      cowboy_patch:patch_headers(Req)));
-    false ->
-      Req
-  end,
   % enable CORS
   Req3 = case lists:keyfind(cors, 1, Opts) of
     {_, AllowedOrigins} ->
-      cors(Req2, AllowedOrigins);
+      cors(Req, AllowedOrigins);
     false ->
-      Req2
+      Req
   end,
   % extract request info
   {Params, Req4} = cowboy_req:bindings(Req3),
@@ -122,7 +113,7 @@ allowed_methods(Req, State) ->
 
 %%
 %% Verify that authentication credentials provided and not forged.
-%% Bearer or basic authorization, or session required.
+%% Bearer or basic authorization, or ?access_token=TOKEN, or session required.
 %%
 is_authorized(Req, State = #state{options = Opts}) ->
   case cowboy_req:parse_header(<<"authorization">>, Req) of
@@ -132,8 +123,14 @@ is_authorized(Req, State = #state{options = Opts}) ->
     {ok, {<<"basic">>, Credentials}, Req2} ->
       try_authorize(Req2, State, password, Credentials);
     _ ->
-      {Session, Req2} = cowboy_session:get(Req),
-      try_authorize(Req2, State, session, Session)
+      case cowboy_req:qs_val(<<"access_token">>, Req) of
+        {undefined, Req2} ->
+          {Session, Req3} = cowboy_session:get(Req2),
+          try_authorize(Req3, State, session, Session);
+        {Token, Req2} ->
+          {_, Secret} = lists:keyfind(token_secret, 1, Opts),
+          try_authorize(Req2, State, token, {Token, Secret})
+      end
   end.
 
 try_authorize(Req, State = #state{params = Params, handler = Handler},
@@ -144,7 +141,7 @@ try_authorize(Req, State = #state{params = Params, handler = Handler},
         {ok, Auth} ->
           {true, Req, State#state{auth = Auth}};
         {error, _} ->
-          {{false, <<"Bearer, Basic, Cookie">>}, Req, State}
+          {{false, <<"Bearer, Basic, Access-Token, Cookie">>}, Req, State}
       end;
     false ->
       {true, Req, State#state{auth = none}}
@@ -210,6 +207,7 @@ content_types_accepted(Req, State) ->
     {{<<"text">>, <<"plain">>, '*'}, put_plain},
     % application/rpc+json accepts batch of requests
     {{<<"application">>, <<"rpc+json">>, '*'}, rpc_json}
+    % @todo: application/rpc+bert for http://bert-rpc.org/
   ], Req, State}.
 
 %%
