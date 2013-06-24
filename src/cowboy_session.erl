@@ -68,8 +68,12 @@ execute(Req, Env) ->
 %% -----------------------------------------------------------------------------
 
 get(Req) ->
-  {{Session, _, _}, Req2} = cowboy_req:meta(session, Req),
-  {Session, Req2}.
+  case cowboy_req:meta(session, Req) of
+    {{Session, _, _}, Req2} ->
+      {Session, Req2};
+    {undefined, Req2} ->
+      {undefined, Req2}
+  end.
 
 %% -----------------------------------------------------------------------------
 %% Set session.
