@@ -100,8 +100,8 @@ cowboy_patch
 --------------
 
 Middleware for easing exposing RESTful services, helps dealing with unfriendly intermediary network environment which sometimes disallow certain critical HTTP methods and/or headers.
-This one allows to tunnel information via URI.
-Please, consult [comments in the code](https://github.com/dvv/stable/blob/master/src/cowboy_patch.erl#L9-L18) so far.
+This one allows to tunnel information via URI and headers.
+Please, consult comments in the code so far.
 
 Should you put `cowboy_patch` in middleware chain, request will be updated automatically.
 
@@ -262,6 +262,28 @@ action(<<"POST">>, [<<"login">>], Req) ->
 action(<<"POST">>, [<<"logout">>], Req) ->
   Req2 = cowboy_session:drop(Req),
   {redirect, <<"/login">>, Req2}.
+```
+
+cowboy_stack
+--------------
+
+An attempt to relax cowboy middleware.
+
+E.g. to apply `cowboy_patch:patch_accept/1` only to requests with prefix `"/api/*"`:
+
+```erlang
+  {middlewares, [
+    ...
+    cowboy_stack,
+    ...
+  ]},
+  {env, [
+    ...
+    {stack, [
+      {<<"/api/">>, cowboy_patch, patch_accept, []}
+    ]},
+    ...
+  ]}
 ```
 
 License (MIT)
