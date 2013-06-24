@@ -23,9 +23,9 @@ execute(Req, Env) ->
   {Path, Req3} = cowboy_req:path(Req2),
   case Path of
     << "/api/", _/binary >> ->
-      patch_accept(Req3);
+      {ok, patch_accept(Req3), Env};
     _ ->
-      Req3
+      {ok, Req3, Env}
   end.
 
 %%
