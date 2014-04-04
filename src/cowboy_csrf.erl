@@ -52,7 +52,7 @@ found_session(CSRFTokenValue, Session, Req3, Env0)	->
 		CSRFTokenValue ->
 			{ok, Req3, Env0};
 		SessionCSRFTokenValue -> 
-			Reason = io_lib:format(<<"Session CSRF token: ~p did not match body CSRF token: ~p">>,[SessionCSRFTokenValue, CSRFTokenValue]),
+			Reason = [<<"Session CSRF token: ">>, SessionCSRFTokenValue, <<" did not match body CSRF token: ">>, CSRFTokenValue],
 			Req4 = cowboy_req:set_resp_body(Reason, Req3),
 			{error, 403, Req4}
 	end.
