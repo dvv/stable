@@ -23,7 +23,7 @@ execute(Req0, Env0) ->
   	  % check if CSRF token is in body, query string, header
   	  case csrf_from_body(Req1) of
   	  	{undefined, Req2} -> 
-			{ok, Req3} = cowboy_req:reply(403, [], <<"Body does not contain CSRF token.">>, Req2),			
+			{ok, Req3} = cowboy_req:reply(403, [], <<"Body does not contain CSRF token">>, Req2),			
 			{error, 403, Req3};
   	  	{error, _Reason} -> {error, 500, Req1};
   	  	{CSRFTokenValue, Req2} -> check_session_first(CSRFTokenValue, Req2, Env0)
@@ -52,11 +52,9 @@ found_session(CSRFTokenValue, Session, Req3, Env0)	->
 		CSRFTokenValue ->
 			{ok, Req3, Env0};
 		SessionCSRFTokenValue -> 
-			Reason = [<<"Session CSRF token: ">>, SessionCSRFTokenValue, <<" did not match body CSRF token: ">>, CSRFTokenValue],
-			Req4 = cowboy_req:set_resp_body(Reason, Req3),
+			Req4 = cowboy_req:set_resp_body(<<"Invalid CSRF token">>, Req3),
 			{error, 403, Req4}
 	end.
-
 
 csrf_from_body(Req0) ->
 	% check in the body
