@@ -218,6 +218,50 @@ Req4 = cowboy_session:drop(Req3).
 
 Consider writing other implementations :)
 
+cowboy_csrf
+--------------
+
+Provide cross site request forgery (CSRF) protection.
+
+Insert `cowboy_csrf` middleware after `cowboy_session`:
+
+```erlang
+  {middlewares, [
+    ...
+    cowboy_session,
+    ...
+    cowboy_csrf,               % requires cowboy_session
+    ...
+  ]}
+```
+
+Generate or retrieve CSRF from session:
+```erlang
+{CsrfToken, Req3}  = case proplists:get_value(csrf_token, Session1, undefined) of
+    undefined ->
+	    % did not find csrf_token in session
+	    % generate a new token and add it to the session
+	    NewToken = base64:encode(crypto:strong_rand_bytes(32)),
+	    Session2 = Session1 ++ [{csrf_token, NewToken}],
+	    Req2 = cowboy_req:set_resp_header(<<"x-csrf-token">>, NewToken, Req1),
+	    Req2a = cowboy_session:set(Session2, Req2),
+	    {NewToken, Req2a};
+    ExistingCsrfToken -> 
+        % found an existing csrf_token in session
+	    {ExistingCsrfToken, Req1}
+    end
+```
+
+Reffer to the token in ErlyDTL template's form:
+```html
+<input type="hidden" name="_csrf" value="{{csrf_token}}"/>
+```
+
+Inject token into the template:
+```erlang
+Template:render([{csrf_token, CsrfToken}]),
+```
+
 cowboy_common_handler
 --------------
 
